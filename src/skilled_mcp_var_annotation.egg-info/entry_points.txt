@@ -1,0 +1,2 @@
+[console_scripts]
+variant-annotation-mcp = variant_annotation.server:main

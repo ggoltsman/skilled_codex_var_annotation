@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "variant-annotation": {
+      "command": "/Users/gee/Training/Codex/skilled_mcp_var_annotation/.venv/bin/python",
+      "args": ["-m", "variant_annotation.server"],
+      "cwd": "/Users/gee/Training/Codex/skilled_mcp_var_annotation"
+    }
+  }
+}

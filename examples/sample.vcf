@@ -1,0 +1,13 @@
+##fileformat=VCFv4.2
+##source=skilled-mcp-var-annotation
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+1	10177	.	A	AC	.	PASS	.
+1	10352	.	T	TA	.	PASS	.
+1	10616	.	CCGCCGTTGCAAAGGCGCGCCG	C	.	PASS	.
+1	11008	.	C	G	.	PASS	.
+1	13110	.	G	A	.	PASS	.
+2	20001	.	A	G	.	PASS	.
+2	20045	.	G	T	.	PASS	.
+3	30017	.	T	C,G	.	PASS	.
+15	150001	.	C	G	.	PASS	.
+16	160002	.	G	A	.	PASS	.

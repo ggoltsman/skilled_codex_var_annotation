@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+src/skilled_mcp_var_annotation.egg-info/PKG-INFO
+src/skilled_mcp_var_annotation.egg-info/SOURCES.txt
+src/skilled_mcp_var_annotation.egg-info/dependency_links.txt
+src/skilled_mcp_var_annotation.egg-info/entry_points.txt
+src/skilled_mcp_var_annotation.egg-info/requires.txt
+src/skilled_mcp_var_annotation.egg-info/top_level.txt
+src/variant_annotation/__init__.py
+src/variant_annotation/clinvar.py
+src/variant_annotation/server.py
+src/variant_annotation/vcf.py

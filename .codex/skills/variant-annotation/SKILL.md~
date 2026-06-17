@@ -1,0 +1,59 @@
+---
+name: variant-annotation
+description: Use the local synthetic ClinVar parquet through the variant-annotation MCP server to annotate VCF variants or individual chrom/pos/ref/alt variant queries.
+---
+
+# Variant Annotation
+
+Use this skill when the user asks to annotate a genomic variant, inspect the sample VCF, or explain how the local variant annotation MCP server works.
+
+## Data Source
+
+The project contains a synthetic ClinVar-style parquet file at:
+
+`data/synthetic_clinvar.parquet`
+
+It has 20 records with these fields:
+
+- `chrom`
+- `pos`
+- `ref`
+- `alt`
+- `variation_id`
+- `clinical_significance`
+- `gene`
+- `condition`
+
+## MCP Tool
+
+Prefer the MCP server tool when it is available:
+
+```python
+query_variant(chrom: str, pos: int, ref: str, alt: str)
+```
+
+Call it with VCF coordinates exactly as they appear in the VCF row. Chromosomes may be passed with or without a `chr` prefix.
+
+## Workflow
+
+1. Parse VCF rows into `chrom`, `pos`, `ref`, and `alt`.
+2. Call `query_variant()` for each variant.
+3. Report whether each variant was found.
+4. For found variants, include `clinical_significance`, `gene`, `condition`, and `variation_id`.
+5. For missing variants, state that the synthetic ClinVar parquet has no matching record.
+
+## Example
+
+VCF row:
+
+```text
+1	11008	.	C	G	.	PASS	.
+```
+
+Tool call:
+
+```python
+query_variant(chrom="1", pos=11008, ref="C", alt="G")
+```
+
+Expected result: a synthetic `Pathogenic` annotation for `OR4F5`.
