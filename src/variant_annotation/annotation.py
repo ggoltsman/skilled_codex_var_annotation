@@ -11,6 +11,7 @@ from typing import Any
 import pandas as pd
 
 from .clinvar import ClinVarStore
+from .schema import apply_table_schema, load_annotated_table_schema
 from .vcf import OUTPUT_DIR, PATHOGENIC_LABELS, VcfVariant, normalize_vcf, parse_vcf, resolve_project_path
 
 
@@ -208,13 +209,15 @@ def _write_iceberg_like_table(rows: list[dict[str, Any]], table_path: Path) -> d
     table_path.mkdir(parents=True, exist_ok=True)
     data_path = table_path / "data.parquet"
     metadata_path = table_path / "metadata.json"
-    frame = pd.DataFrame(rows)
+    schema = load_annotated_table_schema()
+    frame = apply_table_schema(rows, schema)
     frame.to_parquet(data_path, index=False)
     metadata = {
         "format": "iceberg-like-local-parquet",
         "note": "Local stand-in for an Iceberg table. Use submit_spark_job for a real catalog write.",
         "row_count": len(frame),
-        "columns": list(frame.columns),
+        "schema": schema.to_metadata(),
+        "columns": schema.column_names,
         "data_files": [str(data_path)],
     }
     metadata_path.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")

@@ -1,0 +1,139 @@
+{
+  "name": "annotated_variant_table",
+  "version": "1.0.0",
+  "description": "Schema for the local Iceberg-like annotated variant output table.",
+  "fields": [
+    {
+      "name": "chrom",
+      "type": "string",
+      "nullable": false,
+      "description": "Chromosome or contig from the input VCF."
+    },
+    {
+      "name": "pos",
+      "type": "int64",
+      "nullable": false,
+      "description": "1-based variant position from the input VCF."
+    },
+    {
+      "name": "id",
+      "type": "string",
+      "nullable": false,
+      "description": "Variant identifier from the VCF ID column."
+    },
+    {
+      "name": "ref",
+      "type": "string",
+      "nullable": false,
+      "description": "Reference allele from the input VCF."
+    },
+    {
+      "name": "alt",
+      "type": "string",
+      "nullable": false,
+      "description": "Alternate allele from the input VCF after normalization."
+    },
+    {
+      "name": "qual",
+      "type": "string",
+      "nullable": false,
+      "description": "Quality value from the VCF QUAL column."
+    },
+    {
+      "name": "filter",
+      "type": "string",
+      "nullable": false,
+      "description": "Filter value from the VCF FILTER column."
+    },
+    {
+      "name": "vep_consequence",
+      "type": "string",
+      "nullable": false,
+      "description": "Most severe VEP-style consequence label."
+    },
+    {
+      "name": "clinvar_found",
+      "type": "boolean",
+      "nullable": false,
+      "description": "Whether the variant matched the local ClinVar parquet."
+    },
+    {
+      "name": "clinvar_variation_id",
+      "type": "string",
+      "nullable": true,
+      "description": "ClinVar variation identifier from the local ClinVar parquet."
+    },
+    {
+      "name": "clinical_significance",
+      "type": "string",
+      "nullable": true,
+      "description": "ClinVar clinical significance label."
+    },
+    {
+      "name": "gene",
+      "type": "string",
+      "nullable": true,
+      "description": "Gene symbol assigned by the local annotation data."
+    },
+    {
+      "name": "condition",
+      "type": "string",
+      "nullable": true,
+      "description": "ClinVar condition name."
+    },
+    {
+      "name": "gnomad_found",
+      "type": "boolean",
+      "nullable": false,
+      "description": "Whether the variant matched the local gnomAD parquet."
+    },
+    {
+      "name": "gnomad_af",
+      "type": "double",
+      "nullable": true,
+      "description": "gnomAD allele frequency."
+    },
+    {
+      "name": "gnomad_ac",
+      "type": "int64",
+      "nullable": true,
+      "description": "gnomAD allele count."
+    },
+    {
+      "name": "gnomad_an",
+      "type": "int64",
+      "nullable": true,
+      "description": "gnomAD allele number."
+    },
+    {
+      "name": "gnomad_popmax",
+      "type": "string",
+      "nullable": true,
+      "description": "Synthetic population maximum summary string."
+    },
+    {
+      "name": "omim_found",
+      "type": "boolean",
+      "nullable": false,
+      "description": "Whether the gene matched the local OMIM parquet."
+    },
+    {
+      "name": "omim_mim_number",
+      "type": "string",
+      "nullable": true,
+      "description": "OMIM MIM number."
+    },
+    {
+      "name": "omim_phenotype",
+      "type": "string",
+      "nullable": true,
+      "description": "OMIM phenotype description."
+    },
+    {
+      "name": "omim_inheritance",
+      "type": "string",
+      "nullable": true,
+      "description": "OMIM inheritance mode."
+    }
+  ]
+}

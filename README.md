@@ -13,6 +13,7 @@ This is a Codex bioinformatics project that wires together:
 ```text
 .codex/skills/variant-annotation/SKILL.md  Codex skill instructions
 src/variant_annotation/                   Python package and MCP server
+src/variant_annotation/schemas/            Traceable output table schema definitions
 scripts/generate_synthetic_data.py         Creates synthetic parquet data and sample VCF
 scripts/smoke_test_mcp.py                  Verifies the MCP tool over stdio
 data/synthetic_clinvar.parquet             Synthetic ClinVar records keyed by variant
@@ -114,6 +115,8 @@ run_nextflow_workflow(
 `run_vep_annotation()` runs the `vep` executable when it is installed. If VEP is unavailable, it writes deterministic VEP-like consequence annotations so the local workflow remains testable.
 
 `annotate_vcf()` is the preferred end-to-end workflow. It normalizes a VCF, runs the VEP step, joins synthetic ClinVar, gnomAD, and OMIM parquet data, writes an Iceberg-like local parquet table, writes a Markdown pathogenic/likely pathogenic report, and writes a JSON QC summary.
+
+The annotated table schema is defined at `src/variant_annotation/schemas/annotated_variant_table.schema.json`. The writer loads that schema to enforce column order, logical types, and nullability before writing parquet. The generated table metadata includes the schema name, version, source path, and SHA-256 checksum.
 
 `summarize_annotations()` is retained as the minimal legacy ClinVar-only workflow.
 

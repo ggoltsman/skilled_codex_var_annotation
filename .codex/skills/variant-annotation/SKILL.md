@@ -44,6 +44,14 @@ OMIM is keyed by gene and includes:
 - `phenotype`
 - `inheritance`
 
+## Output Table Schema
+
+The annotated Iceberg-like table schema is defined outside the workflow code at:
+
+`src/variant_annotation/schemas/annotated_variant_table.schema.json`
+
+`annotate_vcf()` loads this schema when writing `warehouse/*_annotations/data.parquet`. The schema controls column order, logical types, nullability, and field descriptions. The generated `metadata.json` records the schema name, version, source path, and SHA-256 checksum for traceability.
+
 ## MCP Tool
 
 Prefer the MCP server tool when it is available:
