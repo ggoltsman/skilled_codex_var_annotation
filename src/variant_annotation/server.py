@@ -7,8 +7,8 @@ from mcp.server.fastmcp import FastMCP
 
 from .annotation import (
     DEFAULT_GNOMAD_PATH,
+    GnomadStore,
     OmimStore,
-    ParquetVariantStore,
     annotate_vcf_realistic,
     run_nextflow_workflow as run_nextflow_workflow_job,
     run_vep as run_vep_annotation_step,
@@ -21,7 +21,7 @@ from .vcf import summarize_annotations as summarize_vcf_annotations
 
 mcp = FastMCP("variant-annotation")
 store = ClinVarStore(Path(DEFAULT_CLINVAR_PATH))
-gnomad_store = ParquetVariantStore(
+gnomad_store = GnomadStore(
     parquet_path=Path(DEFAULT_GNOMAD_PATH),
     not_found_message="Variant is not present in the synthetic gnomAD parquet.",
 )

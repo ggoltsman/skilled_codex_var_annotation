@@ -22,7 +22,7 @@ WAREHOUSE_DIR = ROOT / "warehouse"
 
 
 @dataclass(frozen=True)
-class ParquetVariantStore:
+class GnomadStore:
     parquet_path: Path
     not_found_message: str
 
@@ -70,14 +70,14 @@ class OmimStore:
 @dataclass(frozen=True)
 class AnnotationStores:
     clinvar: ClinVarStore
-    gnomad: ParquetVariantStore
+    gnomad: GnomadStore
     omim: OmimStore
 
     @classmethod
     def defaults(cls) -> "AnnotationStores":
         return cls(
             clinvar=ClinVarStore(),
-            gnomad=ParquetVariantStore(
+            gnomad=GnomadStore(
                 parquet_path=DEFAULT_GNOMAD_PATH,
                 not_found_message="Variant is not present in the synthetic gnomAD parquet.",
             ),
