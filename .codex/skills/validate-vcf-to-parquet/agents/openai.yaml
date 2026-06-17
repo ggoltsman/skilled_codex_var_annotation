@@ -1,0 +1,4 @@
+interface:
+  display_name: "Validate VCF to Parquet"
+  short_description: "Validate VCFs and write parquet tables"
+  default_prompt: "Use $validate-vcf-to-parquet to validate this VCF and convert it to parquet."
