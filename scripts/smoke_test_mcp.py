@@ -20,6 +20,13 @@ async def main() -> None:
                 {"chrom": "1", "pos": 11008, "ref": "C", "alt": "G"},
             )
             print(query_result.content[0].text)
+            gnomad_result = await session.call_tool(
+                "query_gnomad",
+                {"chrom": "1", "pos": 11008, "ref": "C", "alt": "G"},
+            )
+            print(gnomad_result.content[0].text)
+            omim_result = await session.call_tool("query_omim", {"gene": "OR4F5"})
+            print(omim_result.content[0].text)
             normalize_result = await session.call_tool(
                 "normalize_vcf",
                 {"input_vcf": "examples/sample.vcf"},
@@ -30,6 +37,11 @@ async def main() -> None:
                 {"input_vcf": "examples/sample.vcf"},
             )
             print(summary_result.content[0].text)
+            annotation_result = await session.call_tool(
+                "annotate_vcf",
+                {"input_vcf": "examples/sample.vcf"},
+            )
+            print(annotation_result.content[0].text)
 
 
 if __name__ == "__main__":

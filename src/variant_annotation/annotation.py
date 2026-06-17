@@ -4,7 +4,7 @@ import csv
 import json
 import shutil
 import subprocess
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -191,9 +191,9 @@ def _annotation_rows(variants: list[VcfVariant], stores: AnnotationStores) -> li
                 "gene": gene,
                 "condition": clinvar.get("condition", ""),
                 "gnomad_found": gnomad["found"],
-                "gnomad_af": gnomad.get("allele_frequency", ""),
-                "gnomad_ac": gnomad.get("allele_count", ""),
-                "gnomad_an": gnomad.get("allele_number", ""),
+                "gnomad_af": gnomad.get("allele_frequency"),
+                "gnomad_ac": gnomad.get("allele_count"),
+                "gnomad_an": gnomad.get("allele_number"),
                 "gnomad_popmax": gnomad.get("popmax", ""),
                 "omim_found": omim["found"],
                 "omim_mim_number": omim.get("mim_number", ""),

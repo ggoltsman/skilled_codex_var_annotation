@@ -5,3 +5,9 @@ pyarrow>=15.0.0
 # Optional system dependency for VCF normalization:
 # bcftools. If unavailable, the project uses a small Python fallback that
 # splits multiallelic ALT rows without reference-based left alignment.
+
+# Optional system dependencies for production-shaped runs:
+# - vep for Ensembl VEP annotation. If unavailable, the project writes
+#   deterministic VEP-like annotations for local testing.
+# - spark-submit for real Spark/Iceberg table jobs.
+# - nextflow for workflow orchestration.
