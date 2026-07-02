@@ -9,7 +9,13 @@ dependencies = [
   "pyarrow>=15.0.0",
 ]
 
+[project.optional-dependencies]
+llm = [
+  "openai>=2.0.0",
+]
+
 [project.scripts]
+variant-annotate = "variant_annotation.cli:main"
 variant-annotation-mcp = "variant_annotation.server:main"
 
 [tool.setuptools]

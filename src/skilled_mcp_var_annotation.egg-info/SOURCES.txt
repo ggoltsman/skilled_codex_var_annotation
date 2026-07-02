@@ -7,6 +7,10 @@ src/skilled_mcp_var_annotation.egg-info/entry_points.txt
 src/skilled_mcp_var_annotation.egg-info/requires.txt
 src/skilled_mcp_var_annotation.egg-info/top_level.txt
 src/variant_annotation/__init__.py
+src/variant_annotation/annotation.py
+src/variant_annotation/cli.py
 src/variant_annotation/clinvar.py
+src/variant_annotation/schema.py
 src/variant_annotation/server.py
 src/variant_annotation/vcf.py
+src/variant_annotation/schemas/annotated_variant_table.schema.json

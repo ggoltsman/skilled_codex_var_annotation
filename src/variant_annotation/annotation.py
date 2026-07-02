@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -20,6 +21,7 @@ DATA_DIR = ROOT / "data"
 DEFAULT_GNOMAD_PATH = DATA_DIR / "synthetic_gnomad.parquet"
 DEFAULT_OMIM_PATH = DATA_DIR / "synthetic_omim.parquet"
 WAREHOUSE_DIR = ROOT / "warehouse"
+DEFAULT_LLM_MODEL = "gpt-5.1"
 
 
 @dataclass(frozen=True)
@@ -271,13 +273,173 @@ def _write_qc_summary(rows: list[dict[str, Any]], qc_path: Path, normalization: 
     return qc
 
 
+def _clinical_relevance_payload(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    notable_rows = [
+        row
+        for row in rows
+        if row["gene"]
+        and (
+            row["clinvar_found"]
+            or row["omim_found"]
+            or str(row["clinical_significance"]).lower() in PATHOGENIC_LABELS
+        )
+    ]
+    return {
+        "variant_count": len(rows),
+        "clinvar_hit_count": sum(1 for row in rows if row["clinvar_found"]),
+        "omim_hit_count": sum(1 for row in rows if row["omim_found"]),
+        "pathogenic_or_likely_pathogenic_count": sum(
+            1 for row in rows if str(row["clinical_significance"]).lower() in PATHOGENIC_LABELS
+        ),
+        "notable_annotations": [
+            {
+                "variant": f"{row['chrom']}:{row['pos']} {row['ref']}>{row['alt']}",
+                "gene": row["gene"],
+                "clinical_significance": row["clinical_significance"],
+                "condition": row["condition"],
+                "gnomad_af": row["gnomad_af"],
+                "omim_phenotype": row["omim_phenotype"],
+                "omim_inheritance": row["omim_inheritance"],
+                "vep_consequence": row["vep_consequence"],
+            }
+            for row in notable_rows
+        ],
+    }
+
+
+def _write_llm_summary_report(
+    rows: list[dict[str, Any]],
+    summary_path: Path,
+    model: str | None = None,
+) -> dict[str, Any]:
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv(ROOT / ".env")
+    except ImportError:
+        pass
+    selected_model = model or os.environ.get("OPENAI_MODEL") or DEFAULT_LLM_MODEL
+    payload = _clinical_relevance_payload(rows)
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        summary_path.write_text(
+            "\n".join(
+                [
+                    "# LLM Annotation Summary",
+                    "",
+                    "LLM summary was skipped because OPENAI_API_KEY is not set.",
+                    "",
+                    "Set OPENAI_API_KEY and install the optional `openai` package to call the model.",
+                    "",
+                    "Prompt payload preview:",
+                    "",
+                    "```json",
+                    json.dumps(payload, indent=2),
+                    "```",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        return {
+            "generated": False,
+            "summary_path": str(summary_path),
+            "model": selected_model,
+            "reason": "OPENAI_API_KEY is not set.",
+        }
+
+    try:
+        from openai import OpenAI
+    except ImportError:
+        summary_path.write_text(
+            "\n".join(
+                [
+                    "# LLM Annotation Summary",
+                    "",
+                    "LLM summary was skipped because the optional `openai` package is not installed.",
+                    "",
+                    "Install it with `python -m pip install openai` or the project `llm` extra.",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        return {
+            "generated": False,
+            "summary_path": str(summary_path),
+            "model": selected_model,
+            "reason": "The optional `openai` package is not installed.",
+        }
+
+    instructions = (
+        "You are helping review a synthetic variant annotation workflow. "
+        "Summarize only the provided annotations, highlight clinically relevant genes, "
+        "mention evidence sources such as ClinVar, gnomAD, and OMIM when present, "
+        "and include a short caveat that this is not a clinical diagnosis."
+    )
+    prompt = (
+        "Write a concise Markdown summary of these variant annotations. "
+        "Prioritize pathogenic or likely pathogenic findings and genes with OMIM disease context.\n\n"
+        f"{json.dumps(payload, indent=2)}"
+    )
+
+    try:
+        client = OpenAI(api_key=api_key)
+        response = client.responses.create(
+            model=selected_model,
+            instructions=instructions,
+            input=prompt,
+        )
+        summary_text = response.output_text
+    except Exception as exc:  # pragma: no cover - exercised only with live API/network failures.
+        summary_path.write_text(
+            "\n".join(
+                [
+                    "# LLM Annotation Summary",
+                    "",
+                    "LLM summary generation failed.",
+                    "",
+                    f"Model: `{selected_model}`",
+                    f"Error: `{type(exc).__name__}: {exc}`",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        return {
+            "generated": False,
+            "summary_path": str(summary_path),
+            "model": selected_model,
+            "reason": f"{type(exc).__name__}: {exc}",
+        }
+
+    summary_path.write_text(
+        "\n".join(
+            [
+                "# LLM Annotation Summary",
+                "",
+                f"Model: `{selected_model}`",
+                "",
+                summary_text.strip(),
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    return {"generated": True, "summary_path": str(summary_path), "model": selected_model}
+
+
 def annotate_vcf_realistic(
     input_vcf: str,
     output_table: str | None = None,
     pathogenic_report: str | None = None,
     qc_summary: str | None = None,
+    llm_summary_report: str | None = None,
     normalize: bool = True,
     run_vep_step: bool = True,
+    generate_llm_summary: bool = True,
+    llm_model: str | None = None,
     stores: AnnotationStores | None = None,
 ) -> dict[str, Any]:
     stores = stores or AnnotationStores.defaults()
@@ -303,10 +465,20 @@ def annotate_vcf_realistic(
         else OUTPUT_DIR / f"{input_path.stem}.pathogenic_likely_pathogenic.md"
     )
     qc_path = resolve_project_path(qc_summary) if qc_summary else OUTPUT_DIR / f"{input_path.stem}.qc_summary.json"
+    llm_summary_path = (
+        resolve_project_path(llm_summary_report)
+        if llm_summary_report
+        else OUTPUT_DIR / f"{input_path.stem}.llm_annotation_summary.md"
+    )
 
     table = _write_iceberg_like_table(rows, table_path)
     candidates = _write_pathogenic_report(rows, report_path)
     qc = _write_qc_summary(rows, qc_path, normalization)
+    llm_summary = (
+        _write_llm_summary_report(rows, llm_summary_path, llm_model)
+        if generate_llm_summary
+        else {"generated": False, "summary_path": None, "reason": "LLM summary generation was disabled."}
+    )
 
     return {
         "input_vcf": str(input_path),
@@ -315,6 +487,7 @@ def annotate_vcf_realistic(
         "annotated_table": table,
         "pathogenic_report": str(report_path),
         "qc_summary": str(qc_path),
+        "llm_summary": llm_summary,
         "variant_count": len(rows),
         "candidate_count": len(candidates),
         "qc": qc,

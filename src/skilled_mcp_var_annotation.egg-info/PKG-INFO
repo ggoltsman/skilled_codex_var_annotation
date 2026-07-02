@@ -6,4 +6,5 @@ Requires-Python: >=3.11
 Requires-Dist: mcp>=1.9.0
 Requires-Dist: pandas>=2.2.0
 Requires-Dist: pyarrow>=15.0.0
-Provides-Extra: vcf
+Provides-Extra: llm
+Requires-Dist: openai>=2.0.0; extra == "llm"

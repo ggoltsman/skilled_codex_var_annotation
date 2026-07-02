@@ -97,17 +97,23 @@ def annotate_vcf(
     output_table: str | None = None,
     pathogenic_report: str | None = None,
     qc_summary: str | None = None,
+    llm_summary_report: str | None = None,
     normalize: bool = True,
     run_vep_step: bool = True,
+    generate_llm_summary: bool = True,
+    llm_model: str | None = None,
 ) -> dict[str, Any]:
-    """Run the realistic VCF annotation workflow and write table/report/QC outputs."""
+    """Run the realistic VCF annotation workflow and write table/report/QC/LLM outputs."""
     return annotate_vcf_realistic(
         input_vcf=input_vcf,
         output_table=output_table,
         pathogenic_report=pathogenic_report,
         qc_summary=qc_summary,
+        llm_summary_report=llm_summary_report,
         normalize=normalize,
         run_vep_step=run_vep_step,
+        generate_llm_summary=generate_llm_summary,
+        llm_model=llm_model,
     )
 
 

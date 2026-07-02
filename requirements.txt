@@ -3,6 +3,9 @@ pandas>=2.2.0
 pyarrow>=15.0.0
 duckdb>=1.0.0
 
+# Optional for the LLM annotation summary step:
+# openai>=2.0.0
+
 # Optional system dependency for VCF normalization:
 # bcftools. If unavailable, the project uses a small Python fallback that
 # splits multiallelic ALT rows without reference-based left alignment.

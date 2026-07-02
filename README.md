@@ -7,6 +7,7 @@ This is a Codex bioinformatics project that wires together:
 - synthetic ClinVar, gnomAD, and OMIM parquet files
 - a sample VCF containing variants that hit and miss the synthetic database
 - local outputs shaped like a production workflow: an annotated Iceberg-like parquet table, a pathogenic/likely pathogenic report, and a QC summary
+- an optional OpenAI LLM summary that turns deterministic annotations into clinician-readable Markdown
 
 ## Layout
 
@@ -20,7 +21,7 @@ data/synthetic_clinvar.parquet             Synthetic ClinVar records keyed by va
 data/synthetic_gnomad.parquet              Synthetic gnomAD population frequencies keyed by variant
 data/synthetic_omim.parquet                Synthetic OMIM disease records keyed by gene
 examples/sample.vcf                        Small VCF for testing
-outputs/                                  Generated normalized VCFs, VEP TSVs, reports, and QC summaries
+outputs/                                  Generated normalized VCFs, VEP TSVs, reports, QC summaries, and LLM summaries
 warehouse/                                Generated Iceberg-like local parquet annotation tables
 requirements.txt                           Runtime dependencies
 ```
@@ -32,8 +33,24 @@ Dependencies are installed into the project-local virtual environment:
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -e .
 .venv/bin/python scripts/generate_synthetic_data.py
 ```
+
+The LLM summary step is enabled by default but soft-fails when credentials or optional packages are missing. To make the workflow call OpenAI, install the optional extra and set an API key:
+
+```bash
+.venv/bin/python -m pip install -e '.[llm]'
+```
+
+Add your API key to `.env`:
+
+```bash
+OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-5.1  # optional; defaults to gpt-5.1
+```
+
+The root `./variant-annotate` wrapper loads `.env` by default, so you do not need to export `OPENAI_API_KEY` in your shell when running the local workflow.
 
 `normalize_vcf()` defaults to `bcftools norm -m -any` first. If `bcftools` is not found, it warns and proceeds with a custom Python function that splits comma-separated ALT alleles without reference-based left alignment.
 
@@ -84,8 +101,11 @@ annotate_vcf(
     output_table: str | None = None,
     pathogenic_report: str | None = None,
     qc_summary: str | None = None,
+    llm_summary_report: str | None = None,
     normalize: bool = True,
     run_vep_step: bool = True,
+    generate_llm_summary: bool = True,
+    llm_model: str | None = None,
 ) -> dict
 summarize_annotations(
     input_vcf: str,
@@ -114,7 +134,9 @@ run_nextflow_workflow(
 
 `run_vep_annotation()` runs the `vep` executable when it is installed. If VEP is unavailable, it writes deterministic VEP-like consequence annotations so the local workflow remains testable.
 
-`annotate_vcf()` is the preferred end-to-end workflow. It normalizes a VCF, runs the VEP step, joins synthetic ClinVar, gnomAD, and OMIM parquet data, writes an Iceberg-like local parquet table, writes a Markdown pathogenic/likely pathogenic report, and writes a JSON QC summary.
+`annotate_vcf()` is the preferred end-to-end workflow. It normalizes a VCF, runs the VEP step, joins synthetic ClinVar, gnomAD, and OMIM parquet data, writes an Iceberg-like local parquet table, writes a Markdown pathogenic/likely pathogenic report, writes a JSON QC summary, and writes an LLM-generated Markdown annotation summary when OpenAI credentials are available.
+
+The LLM step uses the OpenAI Responses API through the optional `openai` Python package. It sends a compact JSON payload containing variant counts, ClinVar/OMIM hits, pathogenic/likely pathogenic findings, genes, conditions, gnomAD allele frequencies, and OMIM phenotype context. If `OPENAI_API_KEY` is missing or the package is not installed, the workflow writes `outputs/<sample>.llm_annotation_summary.md` with a skipped status and prompt payload preview instead of failing the annotation run.
 
 The annotated table schema is defined at `src/variant_annotation/schemas/annotated_variant_table.schema.json`. The writer loads that schema to enforce column order, logical types, and nullability before writing parquet. The generated table metadata includes the schema name, version, source path, and SHA-256 checksum.
 
@@ -124,7 +146,15 @@ The annotated table schema is defined at `src/variant_annotation/schemas/annotat
 
 ## Example Workflow
 
-Run the realistic local annotation workflow through MCP or directly in Python:
+Run the realistic local annotation workflow through the CLI:
+
+```bash
+./variant-annotate examples/sample.vcf
+```
+
+Installing the package also creates `.venv/bin/variant-annotate`, but the root wrapper is the most discoverable entry point for this repo.
+
+Or call it directly in Python:
 
 ```python
 from variant_annotation.annotation import annotate_vcf_realistic
@@ -139,13 +169,14 @@ outputs/sample.normalized.vcf
 outputs/sample.normalized.vep.tsv
 outputs/sample.pathogenic_likely_pathogenic.md
 outputs/sample.qc_summary.json
+outputs/sample.llm_annotation_summary.md
 warehouse/sample_annotations/data.parquet
 warehouse/sample_annotations/metadata.json
 ```
 
 ## How The Pieces Fit
 
-The skill teaches Codex when and how to use the local variant annotation MCP tools. The MCP server loads synthetic parquet files, exposes source-specific lookups, and provides a batch workflow for normalization, VEP-style consequence annotation, ClinVar/gnomAD/OMIM joins, table creation, pathogenic reporting, and QC. The sample VCF provides realistic input rows that can be queried one at a time or processed as a batch through `annotate_vcf()`.
+The skill teaches Codex when and how to use the local variant annotation MCP tools. The MCP server loads synthetic parquet files, exposes source-specific lookups, and provides a batch workflow for normalization, VEP-style consequence annotation, ClinVar/gnomAD/OMIM joins, table creation, pathogenic reporting, QC, and LLM summarization. The sample VCF provides realistic input rows that can be queried one at a time or processed as a batch through `annotate_vcf()`.
 
 For example, this VCF row:
 

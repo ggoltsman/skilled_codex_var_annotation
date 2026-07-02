@@ -73,8 +73,11 @@ annotate_vcf(
     output_table: str | None = None,
     pathogenic_report: str | None = None,
     qc_summary: str | None = None,
+    llm_summary_report: str | None = None,
     normalize: bool = True,
     run_vep_step: bool = True,
+    generate_llm_summary: bool = True,
+    llm_model: str | None = None,
 )
 summarize_annotations(
     input_vcf: str,
@@ -99,7 +102,9 @@ run_nextflow_workflow(
 
 Call it with VCF coordinates exactly as they appear in the VCF row. Chromosomes may be passed with or without a `chr` prefix.
 
-`annotate_vcf()` is the preferred end-to-end workflow. It normalizes the VCF, runs VEP if the `vep` executable is available, falls back to deterministic VEP-like consequence labels when VEP is unavailable, joins local ClinVar/gnomAD/OMIM parquet data, writes an annotated Iceberg-like parquet table under `warehouse/`, writes a pathogenic/likely pathogenic Markdown report, and writes a QC JSON summary.
+`annotate_vcf()` is the preferred end-to-end workflow. It normalizes the VCF, runs VEP if the `vep` executable is available, falls back to deterministic VEP-like consequence labels when VEP is unavailable, joins local ClinVar/gnomAD/OMIM parquet data, writes an annotated Iceberg-like parquet table under `warehouse/`, writes a pathogenic/likely pathogenic Markdown report, writes a QC JSON summary, and writes an LLM-generated annotation summary under `outputs/` when OpenAI credentials are available.
+
+The LLM summary step is intentionally optional at runtime. It uses the OpenAI Responses API through the optional `openai` Python package when `OPENAI_API_KEY` is set. If credentials or the package are missing, the workflow writes a skipped Markdown summary with a compact prompt payload preview so local runs remain deterministic and inspectable. Use `generate_llm_summary=False` to disable this artifact entirely, `llm_summary_report` to choose the Markdown path, and `llm_model` or `OPENAI_MODEL` to choose the model.
 
 `summarize_annotations()` is retained as the minimal legacy ClinVar-only workflow.
 
@@ -121,6 +126,7 @@ Call it with VCF coordinates exactly as they appear in the VCF row. Chromosomes 
    - annotated Iceberg-like parquet table
    - candidate pathogenic/likely pathogenic variant report
    - QC summary
+   - LLM annotation summary, or a skipped summary artifact when credentials are unavailable
 6. For missing variants, state which local synthetic parquet source has no matching record.
 
 For production-shaped requests, use `submit_spark_job()` to launch an existing Spark app that writes to a real Iceberg catalog. Use `dry_run=True` unless the user explicitly wants to execute the job. Use `run_nextflow_workflow()` when the user asks to run a workflow wrapper around normalization, VEP, annotation, Spark table creation, and report generation.
@@ -144,6 +150,12 @@ Expected result:
 
 End-to-end local annotation:
 
+```bash
+variant-annotate examples/sample.vcf
+```
+
+Direct Python call:
+
 ```python
 annotate_vcf(input_vcf="examples/sample.vcf")
 ```
@@ -154,3 +166,4 @@ Expected outputs:
 - `warehouse/sample_annotations/metadata.json`
 - `outputs/sample.pathogenic_likely_pathogenic.md`
 - `outputs/sample.qc_summary.json`
+- `outputs/sample.llm_annotation_summary.md`
